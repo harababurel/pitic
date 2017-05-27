@@ -1,0 +1,21 @@
+.jumbotron {
+  border-radius: 12;
+}
+
+.logo {
+  font-family: 'Raleway', sans-serif;
+  text-shadow: 2px 2px 4px grey;
+}
+
+a.logo {
+  text-decoration: none;
+}
+
+.navbar-padding {
+  padding: 30px 0px 30px 0px;
+}
+
+.clippy {
+  max-width: 14px;
+}
+

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block body %}
+
+{% set protocol = "http://" %}
+
+{% if data %}
+  {% set short_url = data['base_url'] + data['short_url'] %}
+  {% set long_url = data['long_url'] %}
+  {% set placeholder = data['long_url_without_protocol'] %}
+
+{% else %}
+  {% set placeholder = "URL" %}
+{% endif %}
+
+
+<br><br>
+
+<div class="jumbotron jumbotron-fluid" >
+  <div class="container text-center">
+
+    <h1 class="logo">
+      <a class="logo" href="/">URL<sub>pitic</sub></a>
+    </h1>
+
+    <nav class="navbar navbar-light navbar-padding">
+      <form class="form-inline" action="/" method="POST">
+        <div class="input-group">
+          <input type="hidden" name="protocol" id="hidden-protocol" value="{{ protocol }}">
+          <span class="input-group-addon input-lg" id="protocol" style="border-radius: 6px 0px 0px 6px;">http&#58;&#47;&#47;</span>
+          <input type="text" class="form-control input-lg" placeholder="{{ placeholder }}" id="url-textbox" name="url" onkeyup="updateProtocol()">
+          <span class="input-group-btn">
+            <button type="submit" class="btn btn-primary btn-lg" id="shorten-button">Shorten</button>
+          </span>
+        </div>
+      </form>
+    </nav>
+
+    <!-- {{ data }} -->
+
+    {% if short_url %}
+
+    <div class="panel panel-default" style="padding: 10px;">
+      <div class="panel-body">
+        <h5>You can access <span class="label label-default">{{ long_url[:20] + ('...' if long_url|length > 20 else '') }}</span> by using the following link:</h5><br>
+
+        <div class="btn-group" role="group" aria-label="...">
+          <a href="{{ short_url }}" value="{{ short_url }}" class="btn btn-lg btn-default">{{ short_url }}</a>
+          <button type="button" class="btn btn-lg btn-primary" data-clipboard-text="{{ short_url }}">
+            <img src="static/clippy.svg" class="clippy" alt="Copy to clipboard">
+            Copy to clipboard
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    {% endif %}
+
+  </div>
+</div>
+
+<script type="text/javascript">
+function updateProtocol() {
+  var protocol_box = document.getElementById("protocol");
+  var url_box = document.getElementById("url-textbox");
+  var hidden_protocol = document.getElementById("hidden-protocol");
+
+  var protocols = ["http://", "https://", "ftp://"];
+
+  for(var i in protocols) {
+    var protocol = protocols[i];
+    if(url_box.value.indexOf(protocol) == 0) {
+      hidden_protocol.value = protocol;
+      protocol_box.innerHTML = protocol;
+      url_box.value = url_box.value.substring(protocol.length);
+    }
+  }
+}
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/clipboard.js/1.6.1/clipboard.min.js"></script>
+
+<!-- Show console output for "copy to clipboard" actions -->
+<script type="text/javascript">
+var clipboard = new Clipboard('.btn');
+
+clipboard.on('success', function(e) {
+    console.info('Action:', e.action);
+    console.info('Text:', e.text);
+    console.info('Trigger:', e.trigger);
+
+    e.clearSelection();
+});
+
+clipboard.on('error', function(e) {
+    console.error('Action:', e.action);
+    console.error('Trigger:', e.trigger);
+});
+</script>
+
+{% endblock %}

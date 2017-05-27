@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <title>URL Pitic</title>
+    <link rel=stylesheet type=text/css href="../static/bootstrap.min.css">
+    <link rel=stylesheet type=text/css href="../static/style.css">
+    <link href="https://fonts.googleapis.com/css?family=Raleway:900" rel="stylesheet">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <script type="text/javascript">
+            alert("{{ message }}");
+          </script>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </head>
+  <body>
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-6">
+        {% block body %}
+        {% endblock %}
+
+        {% if error %}
+          <span class="label label-info">{{ error }}</span>
+        {% endif %}
+      </div>
+      <div class="col-md-3"></div>
+    </div>
+  </body>
+</html>

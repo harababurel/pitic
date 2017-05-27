@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block body %}
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>URL</th>
+      <th>URL pitic</th>
+      <th>Created on</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in entries %}
+      <tr>
+        <td>{{ entry.long_url }}</td>
+        <td>{{ entry.short_url }}</td>
+        <td>{{ entry.timestamp }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
