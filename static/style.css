@@ -11,6 +11,10 @@ a.logo {
   text-decoration: none;
 }
 
+.footer {
+  padding: 20px 0px 0px 0px;
+}
+
 .navbar-padding {
   padding: 30px 0px 30px 0px;
 }

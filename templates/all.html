@@ -7,14 +7,16 @@
       <th>URL</th>
       <th>URL pitic</th>
       <th>Created on</th>
+      <th>Created by</th>
     </tr>
   </thead>
   <tbody>
-    {% for entry in entries %}
+    {% for shortening in shortenings %}
       <tr>
-        <td>{{ entry.long_url }}</td>
-        <td>{{ entry.short_url }}</td>
-        <td>{{ entry.timestamp }}</td>
+        <td>{{ shortening.long_url }}</td>
+        <td>{{ shortening.short_url }}</td>
+        <td>{{ shortening.timestamp }}</td>
+        <td>{{ shortening.ip }}</td>
       </tr>
     {% endfor %}
   </tbody>
