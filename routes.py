@@ -1,4 +1,5 @@
 from flask import request, redirect, flash, url_for
+from pprint import pformat
 from main import *
 
 @app.route("/<short_url>", methods=['GET', 'POST'])
@@ -42,7 +43,11 @@ def index():
             'base_url': base_url,
         })
 
-    return render_template("index.html", data=data)
+
+    pretty_data = pformat(data, indent=2).replace("\n", "<br>")
+    print(pretty_data)
+
+    return render_template("index.html", data=data, pretty_data=pretty_data)
 
 
 @app.route("/all")
