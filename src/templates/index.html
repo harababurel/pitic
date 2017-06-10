@@ -33,16 +33,19 @@
 
     <nav class="navbar navbar-light navbar-padding">
       <form class="form-inline" action="/" method="POST">
-        <div class="input-group">
+        <div class="input-group form-group">
           <input type="hidden" name="protocol" id="hidden-protocol" value="{{ protocol }}">
           <span class="input-group-addon input-lg" id="protocol" style="border-radius: 6px 0px 0px 6px;">http&#58;&#47;&#47;</span>
           <input type="text" class="form-control input-lg" placeholder="{{ placeholder }}" id="url-textbox" name="url" onkeyup="updateProtocol()">
+
           <span class="input-group-btn">
             <button type="submit" class="btn btn-primary btn-lg" id="shorten-button">Shorten</button>
           </span>
+
         </div>
       </form>
     </nav>
+
 
     {% if data['debug'] %}
       <div class="row">
