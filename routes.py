@@ -1,6 +1,7 @@
 from flask import request, redirect, flash, url_for
 from pprint import pformat
 from main import *
+import validators
 
 @app.route("/<short_url>", methods=['GET', 'POST'])
 def retrieve(short_url):
@@ -21,6 +22,7 @@ def index():
     data = {
         'number_of_urls': get_number_of_shortenings(),
         'remote_address': get_remote_address(),
+        'debug': app.config['DEBUG'],
     }
 
     if request.method == 'POST':
@@ -28,6 +30,11 @@ def index():
         long_url_without_protocol = request.form['url']
         long_url = protocol + long_url_without_protocol
         base_url = request.url_root
+
+        if not validators.url(long_url, public=True):
+            flash("%s is not a valid URL." % long_url)
+            print("%s is not a valid URL." % long_url)
+            return redirect(url_for('index'))
 
         if not long_url_exists(long_url):
             try:

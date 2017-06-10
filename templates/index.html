@@ -3,21 +3,21 @@
 {% set protocol = "http://" %}
 
 {% if 'base_url' in data and 'short_url' in data %}
-  {% set short_url = data['base_url'] + data['short_url'] %}
+{% set short_url = data['base_url'] + data['short_url'] %}
 {% endif %}
 
 {% if 'long_url' in data %}
-  {% set long_url = data['long_url'] %}
+{% set long_url = data['long_url'] %}
 {% endif %}
 
 {% if 'long_url_without_protocol' in data %}
-  {% set placeholder = data['long_url_without_protocol'] %}
+{% set placeholder = data['long_url_without_protocol'] %}
 {% else %}
-  {% set placeholder = "URL" %}
+{% set placeholder = "URL" %}
 {% endif %}
 
 {% if 'number_of_urls' in data %}
-  {% set number_of_urls = data['number_of_urls'] %}
+{% set number_of_urls = data['number_of_urls'] %}
 {% endif %}
 
 {% block body %}
@@ -27,7 +27,7 @@
   <div class="container text-center">
 
     <h1 class="logo">
-      <a class="logo" href="/">URL<sub>pitic</sub></a>
+      <a class="logo" href="/"><span class="logo-initial">P</span>itic</a>
     </h1>
 
 
@@ -44,47 +44,63 @@
       </form>
     </nav>
 
+    {% if data['debug'] %}
+      <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-6"style="text-align: left;">
+          <pre>{{ pretty_data|safe }}</pre>
+        </div>
+        <div class="col-md-3"></div>
+      </div>
+      {% endif %}
 
     <div class="row">
       <div class="col-md-3"></div>
-      <div class="col-md-6"style="text-align: left;">
-        <pre>{{ pretty_data|safe }}</pre>
+      <div class="col-md-6"style="text-align: center;">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <h3><span class="label label-primary">{{ message }}</span></h3>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
       </div>
       <div class="col-md-3"></div>
     </div>
+
     <br>
 
     {% if short_url %}
-      <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-6">
-          <div class="panel panel-info" style="padding: 10px;">
-            <div class="panel-body">
-              <h5>You can access <a href="{{ long_url }}" target="_blank"><span class="label label-default">{{ long_url[:20] + ('...' if long_url|length > 20 else '') }}</span></a> by using the following link:</h5><br>
+    <div class="row">
+      <div class="col-md-3"></div>
+      <div class="col-md-6">
+        <div class="panel panel-info" style="padding: 10px;">
+          <div class="panel-body">
+            <h5>You can access <a href="{{ long_url }}" target="_blank"><span class="label label-default">{{ long_url[:20] + ('...' if long_url|length > 20 else '') }}</span></a> by using the following link:</h5><br>
 
-              <div class="btn-group" role="group" aria-label="...">
-                <a href="{{ short_url }}" value="{{ short_url }}" class="btn btn-lg btn-default">{{ short_url }}</a>
-                <button type="button" class="btn btn-lg btn-primary" data-clipboard-text="{{ short_url }}">
-                  <img src="static/clippy.svg" class="clippy" alt="Copy to clipboard">
-                  Copy to clipboard
-                </button>
-              </div>
+            <div class="btn-group" role="group" aria-label="...">
+              <a href="{{ short_url }}" value="{{ short_url }}" class="btn btn-lg btn-default">{{ short_url }}</a>
+              <button type="button" class="btn btn-lg btn-primary" data-clipboard-text="{{ short_url }}">
+                <img src="static/clippy.svg" class="clippy" alt="Copy to clipboard">
+                Copy to clipboard
+              </button>
             </div>
           </div>
         </div>
-        <div class="col-md-3"></div>
       </div>
+      <div class="col-md-3"></div>
+    </div>
     {% endif %}
 
     {% if number_of_urls %}
-      <div class="row footer">
-        <div class="col-md-4"></div>
-        <div class="col-md-4">
-          <hr>
-          <h5><span class="badge">{{ number_of_urls }}</span> URLs shortened so far.</h5>
-        </div>
-        <div class="col-md-4"></div>
+    <div class="row footer">
+      <div class="col-md-4"></div>
+      <div class="col-md-4">
+        <hr>
+        <h5><span class="badge">{{ number_of_urls }}</span> URLs shortened so far.</h5>
       </div>
+      <div class="col-md-4"></div>
+    </div>
     {% endif %}
   </div>
 </div>
@@ -115,16 +131,16 @@ function updateProtocol() {
 var clipboard = new Clipboard('.btn');
 
 clipboard.on('success', function(e) {
-    console.info('Action:', e.action);
-    console.info('Text:', e.text);
-    console.info('Trigger:', e.trigger);
+  console.info('Action:', e.action);
+  console.info('Text:', e.text);
+  console.info('Trigger:', e.trigger);
 
-    e.clearSelection();
+  e.clearSelection();
 });
 
 clipboard.on('error', function(e) {
-    console.error('Action:', e.action);
-    console.error('Trigger:', e.trigger);
+  console.error('Action:', e.action);
+  console.error('Trigger:', e.trigger);
 });
 </script>
 

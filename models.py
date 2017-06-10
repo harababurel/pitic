@@ -6,7 +6,7 @@ class Shortening(db.Model):
     __tablename__ = 'shortenings'
 
     long_url = db.Column(db.String(2000), primary_key=True)
-    short_url = db.Column(db.String(32), index=True)
+    short_url = db.Column(db.String(32), unique=True, index=True)
     timestamp = db.Column(db.DateTime)
     ip = db.Column(db.String(45), index=True)
 

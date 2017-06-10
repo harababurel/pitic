@@ -1,10 +1,16 @@
 .jumbotron {
   border-radius: 12;
+  box-shadow: 0px 0px 100px #bdbdbd;
 }
 
 .logo {
   font-family: 'Raleway', sans-serif;
-  text-shadow: 2px 2px 4px grey;
+  font-size: 48px;
+  text-shadow: 3px 3px 4px grey;
+}
+
+.logo-initial {
+  font-size: 100px;
 }
 
 a.logo {

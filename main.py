@@ -57,12 +57,16 @@ def get_number_of_shortenings():
 
 def generate_short_url(long_url):
     short_url = None
-
-    print("Generated short URL: %s" % short_url)
+    current_size = config['short_url_size']
+    attempts = 0
 
     while short_url is None or short_url_exists(short_url):
-        print("Short URL already exists. Generating a new one.")
-        short_url = generate_random_string(config['short_url_size'])
+        short_url = generate_random_string(current_size)
+        attempts += 1
+
+        if attempts >= config['max_attempts_until_short_url_size_increases']:
+            attempts = 0
+            current_size += 1
 
     return short_url
 
