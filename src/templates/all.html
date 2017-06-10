@@ -7,6 +7,7 @@
       <th>Long URL</th>
       <th>Short URL</th>
       <th>Hits</th>
+      <th>Custom</th>
       <th>Created on</th>
       <th>Created by</th>
     </tr>
@@ -25,6 +26,13 @@
           </a>
         </td>
         <td>{{ shortening.hits }}</td>
+        <td>
+          {% if shortening.custom %}
+            <i class="fa fa-check" aria-hidden="true"></i>
+          {% else %}
+            <i class="fa fa-times" aria-hidden="true"></i>
+          {% endif %}
+        </td>
         <td>{{ shortening.timestamp }}</td>
         <td>{{ shortening.ip }}</td>
       </tr>

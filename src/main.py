@@ -2,7 +2,7 @@
 from flask import Flask, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 
-from sqlalchemy import exists
+from sqlalchemy import exists, and_
 from random import sample, choice
 from config import config
 
@@ -26,6 +26,7 @@ limiter = Limiter(
     default_limits=["10 per second", "100 per minute"]
 )
 
+
 def generate_random_string(size):
     return ''.join([choice(config['alphabet']) for _ in range(size)])
 
@@ -35,16 +36,21 @@ def short_url_exists(short_url):
 
 
 def long_url_exists(long_url):
-    return db.session.query(exists().where(Shortening.long_url == long_url)).scalar()
+    return db.session.query(exists().where(and_(
+        Shortening.long_url == long_url,
+        Shortening.custom == False))).scalar()
 
 
 def get_short_url(long_url):
-    return db.session.query(Shortening).filter_by(long_url=long_url).first().short_url
+    return db.session.query(Shortening).filter(and_(
+        Shortening.long_url == long_url,
+        Shortening.custom == False)).first().short_url
 
 
 def get_long_url(short_url):
     print("querying short url = <%s>" % short_url)
     return db.session.query(Shortening).filter_by(short_url=short_url).first().long_url
+
 
 def get_shortening(long_url=None, short_url=None):
     results = db.session.query(Shortening)
@@ -58,7 +64,6 @@ def get_shortening(long_url=None, short_url=None):
     print("first result: %r" % results.first())
 
     return results.first()
-
 
 
 def get_all_shortenings():
@@ -85,19 +90,47 @@ def generate_short_url(long_url):
     return short_url
 
 
-def shorten(long_url):
-    try:
+def validate_short_url(short_url):
+    if len(short_url) < config['min_short_url_size'] or \
+       len(short_url) > config['max_short_url_size']:
+        return False
+
+    for x in short_url:
+        if x not in config['alphabet']:
+            return False
+
+
+
+    return True
+
+
+def shorten(long_url, short_url=None):
+    custom = True
+    if short_url is None:
         short_url = generate_short_url(long_url)
-        db.session.add(Shortening(long_url, short_url, ip=get_remote_address()))
+        custom = False
+
+    try:
+        db.session.add(Shortening(
+            long_url,
+            short_url,
+            custom=custom,
+            ip=get_remote_address()))
+
         db.session.commit()
     except Exception as e:
         print("could not shorten long_url = %s; reason: %s" % (long_url, e))
 
 if __name__ == "__main__":
     try:
+        print("Creating database.")
         db.create_all()
-        print("Created database.")
-    except:
-        print("Database exists. No need to create it.")
+        print("Database created.")
+    except Exception as e:
+        print("Did not create database. Reason:\n%s" % e)
+        exit(1)
 
-    app.run()
+    try:
+        app.run()
+    except Exception as e:
+        print("Could not run app. Reason:\n%s" % e)

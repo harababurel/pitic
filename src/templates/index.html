@@ -43,6 +43,12 @@
           </span>
 
         </div>
+        <br>
+
+        <input type="checkbox" id="wants_custom" name="wants_custom" value="yes">Custom</input>
+        <input type="hidden" id="wants_custom_hidden" name="wants_custom" value="no">
+
+        <input type="text" name="custom_url" value="asdf" placeholder="asdf"></input>
       </form>
     </nav>
 
@@ -146,5 +152,6 @@ clipboard.on('error', function(e) {
   console.error('Trigger:', e.trigger);
 });
 </script>
+
 
 {% endblock %}

@@ -1,5 +1,5 @@
 from flask import request, redirect, flash, url_for
-from pprint import pformat
+from pprint import pformat, pprint
 from main import *
 import validators
 
@@ -29,29 +29,52 @@ def index():
     }
 
     if request.method == 'POST':
-        protocol = request.form['protocol']
-        long_url_without_protocol = request.form['url']
-        long_url = protocol + long_url_without_protocol
-        base_url = request.url_root
+        data.update({
+            'protocol': request.form['protocol'],
+            'long_url_without_protocol': request.form['url'],
+            'base_url': request.url_root,
+            'wants_custom': request.form['wants_custom'],
+            'custom_url': request.form['custom_url'],
+        })
 
-        if not validators.url(long_url, public=True):
-            flash("%s is not a valid URL." % long_url)
-            print("%s is not a valid URL." % long_url)
+        data['long_url'] = data['protocol'] + data['long_url_without_protocol']
+
+        if not validators.url(data['long_url'], public=True):
+            flash("%s is not a valid URL." % data['long_url'])
+            print("%s is not a valid URL." % data['long_url'])
             return redirect(url_for('index'))
 
-        if not long_url_exists(long_url):
-            try:
-                shorten(long_url)
-            except Exception as e:
-                return 'could not shorten <samp>%s</samp>: %s' % (long_url, e)
+        if data['wants_custom'] == 'yes':
+            if not validate_short_url(data['custom_url']):
+                flash("%s is not a valid custom URL." % data['custom_url'])
+                print("%s is not a valid custom URL." % data['custom_url'])
+                return redirect(url_for('index'))
 
-        data.update({
-            'protocol': protocol,
-            'long_url_without_protocol': long_url_without_protocol,
-            'long_url': long_url,
-            'short_url': get_short_url(long_url),
-            'base_url': base_url,
-        })
+            if short_url_exists(data['custom_url']):
+                if get_long_url(data['custom_url']) != data['long_url']:
+                    flash("Short URL is already mapped to something else!")
+                    return redirect(url_for('index'))
+                else:
+                    data['short_url'] = data['custom_url']
+                    return render_template("index.html", data=data)
+
+            try:
+                shorten(data['long_url'], data['custom_url'])
+                data['short_url'] = data['custom_url']
+            except Exception as e:
+                flash("Could not shorten %s to %s. Reason: %s" % \
+                        (data['long_url'], data['custom_url'], e))
+                return redirect(url_for('index'))
+
+        else:
+            if not long_url_exists(data['long_url']):
+                try:
+                    shorten(data['long_url'])
+                except Exception as e:
+                    flash("Could not shorten %s. Reason: %s" % e)
+                    return redirect(url_for('index'))
+            data['short_url'] = get_short_url(data['long_url'])
+
 
     pretty_data = pformat(data, indent=2).replace("\n", "<br>")
     print(pretty_data)
