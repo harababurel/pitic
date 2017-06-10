@@ -3,14 +3,17 @@ from pprint import pformat
 from main import *
 import validators
 
+
 @app.route("/<short_url>", methods=['GET', 'POST'])
 def retrieve(short_url):
     if short_url is None or short_url == 'favicon.ico':
         return redirect(url_for("index"))
 
     if short_url_exists(short_url):
-        long_url = get_long_url(short_url)
-        return redirect(long_url, code=302)
+        shortening = get_shortening(short_url=short_url)
+        shortening += 1
+
+        return redirect(shortening.long_url, code=302)
     else:
         flash('{} is not mapped to any URL.'.format(
             request.url_root + short_url))
@@ -50,7 +53,6 @@ def index():
             'base_url': base_url,
         })
 
-
     pretty_data = pformat(data, indent=2).replace("\n", "<br>")
     print(pretty_data)
 
@@ -59,7 +61,9 @@ def index():
 
 @app.route("/all")
 def show_all():
-    return render_template("all.html", shortenings=get_all_shortenings())
+    return render_template("all.html",
+                           shortenings=get_all_shortenings(),
+                           url_root=request.url_root)
 
 
 @app.errorhandler(404)

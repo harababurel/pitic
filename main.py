@@ -46,6 +46,20 @@ def get_long_url(short_url):
     print("querying short url = <%s>" % short_url)
     return db.session.query(Shortening).filter_by(short_url=short_url).first().long_url
 
+def get_shortening(long_url=None, short_url=None):
+    results = db.session.query(Shortening)
+
+    if long_url is not None:
+        results = results.filter_by(long_url=long_url)
+
+    if short_url is not None:
+        results = results.filter_by(short_url=short_url)
+
+    print("first result: %r" % results.first())
+
+    return results.first()
+
+
 
 def get_all_shortenings():
     return db.session.query(Shortening).all()

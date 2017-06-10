@@ -4,8 +4,9 @@
 <table class="table table-hover">
   <thead>
     <tr>
-      <th>URL</th>
-      <th>URL pitic</th>
+      <th>Long URL</th>
+      <th>Short URL</th>
+      <th>Hits</th>
       <th>Created on</th>
       <th>Created by</th>
     </tr>
@@ -13,13 +14,24 @@
   <tbody>
     {% for shortening in shortenings %}
       <tr>
-        <td>{{ shortening.long_url }}</td>
-        <td>{{ shortening.short_url }}</td>
+        <td>
+          <a href="{{ shortening.long_url }}" target="_blank">
+            {{ shortening.long_url }}
+          </a>
+        </td>
+        <td>
+          <a href="{{ url_root + shortening.short_url }}" target="_blank">
+            {{ shortening.short_url }}
+          </a>
+        </td>
+        <td>{{ shortening.hits }}</td>
         <td>{{ shortening.timestamp }}</td>
         <td>{{ shortening.ip }}</td>
       </tr>
     {% endfor %}
   </tbody>
 </table>
+
+
 
 {% endblock %}
