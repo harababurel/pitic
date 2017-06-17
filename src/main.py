@@ -1,136 +1,79 @@
 #!/usr/bin/env python3
 from flask import Flask, request, render_template
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
 
-from sqlalchemy import exists, and_
+
 from random import sample, choice
 from config import config
 
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-
-app = Flask(__name__)
-app.secret_key = config['secret_key']
-
-for app_setting in config['app'].items():
-    app.config[app_setting[0]] = app_setting[1]
-
-db = SQLAlchemy(app)
-
-from routes import *
-from models import *
-
-limiter = Limiter(
-    app,
-    key_func=get_remote_address,
-    default_limits=["10 per second", "100 per minute"]
-)
+from util import Util
+from singleton import Singleton
+from models import Shortening, DBSession
 
 
-def generate_random_string(size):
-    return ''.join([choice(config['alphabet']) for _ in range(size)])
+class ShorteningResource(Resource):
+    def get(self, short_url):
+        # return {'long_url': 'http://google.com'}
+        return self.retrieve(short_url)
 
+    def retrieve(self, short_url):
+        if short_url is None or short_url == 'favicon.ico':
+            return {'long_url': None}
 
-def short_url_exists(short_url):
-    return db.session.query(exists().where(Shortening.short_url == short_url)).scalar()
+        util = Pitic.Instance().util
 
+        if util.short_url_exists(short_url):
+            shortening = util.get_shortening(short_url=short_url)
+            # shortening += 1
+            return str(shortening)
+        else:
+            return  {'long_url': None}
 
-def long_url_exists(long_url):
-    return db.session.query(exists().where(and_(
-        Shortening.long_url == long_url,
-        Shortening.custom == False))).scalar()
+@Singleton
+class Pitic(object):
 
+    def __init__(self):
+        self.app = Flask(__name__)
+        self.load_config()
 
-def get_short_url(long_url):
-    return db.session.query(Shortening).filter(and_(
-        Shortening.long_url == long_url,
-        Shortening.custom == False)).first().short_url
+        self.db = SQLAlchemy(self.app)
+        self.db_session = DBSession()
 
+        self.util = Util(self.db_session)
 
-def get_long_url(short_url):
-    print("querying short url = <%s>" % short_url)
-    return db.session.query(Shortening).filter_by(short_url=short_url).first().long_url
+        self.api = Api(self.app)
+        self.add_api_resources()
 
+    def load_config(self):
+        self.app.secret_key = config['secret_key']
 
-def get_shortening(long_url=None, short_url=None):
-    results = db.session.query(Shortening)
+        for app_setting in config['app'].items():
+            self.app.config[app_setting[0]] = app_setting[1]
 
-    if long_url is not None:
-        results = results.filter_by(long_url=long_url)
+    def add_api_resources(self):
+        self.api.add_resource(ShorteningResource, '/api/<short_url>')
 
-    if short_url is not None:
-        results = results.filter_by(short_url=short_url)
+    def run(self):
+        self.app.run()
 
-    print("first result: %r" % results.first())
-
-    return results.first()
-
-
-def get_all_shortenings():
-    return db.session.query(Shortening).all()
-
-
-def get_number_of_shortenings():
-    return db.session.query(Shortening).count()
-
-
-def generate_short_url(long_url):
-    short_url = None
-    current_size = config['short_url_size']
-    attempts = 0
-
-    while short_url is None or short_url_exists(short_url):
-        short_url = generate_random_string(current_size)
-        attempts += 1
-
-        if attempts >= config['max_attempts_until_short_url_size_increases']:
-            attempts = 0
-            current_size += 1
-
-    return short_url
-
-
-def validate_short_url(short_url):
-    if len(short_url) < config['min_short_url_size'] or \
-       len(short_url) > config['max_short_url_size']:
-        return False
-
-    for x in short_url:
-        if x not in config['alphabet']:
-            return False
-
-
-
-    return True
-
-
-def shorten(long_url, short_url=None):
-    custom = True
-    if short_url is None:
-        short_url = generate_short_url(long_url)
-        custom = False
-
-    try:
-        db.session.add(Shortening(
-            long_url,
-            short_url,
-            custom=custom,
-            ip=get_remote_address()))
-
-        db.session.commit()
-    except Exception as e:
-        print("could not shorten long_url = %s; reason: %s" % (long_url, e))
-
+# limiter = Limiter(
+#     app,
+#     key_func=get_remote_address,
+#     default_limits=["10 per second", "100 per minute"]
+# )
 if __name__ == "__main__":
+    pitic = Pitic.Instance()
+    # try:
+    #     print("Creating database.")
+    #     pitic.create_db()
+    #     print("Database created.")
+    # except Exception as e:
+    #     print("Did not create database. Reason:\n%s" % e)
+    #     exit(1)
     try:
-        print("Creating database.")
-        db.create_all()
-        print("Database created.")
-    except Exception as e:
-        print("Did not create database. Reason:\n%s" % e)
-        exit(1)
-
-    try:
-        app.run()
+        pitic.run()
     except Exception as e:
         print("Could not run app. Reason:\n%s" % e)
