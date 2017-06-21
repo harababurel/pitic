@@ -1,5 +1,10 @@
 from models import Shortening
 from sqlalchemy import exists, and_
+from random import choice
+from config import config
+from exceptions import *
+
+import validators
 
 
 class Util:
@@ -7,7 +12,7 @@ class Util:
     def __init__(self, db_session):
         self.db_session = db_session
 
-    def generate_random_string(size):
+    def generate_random_string(self, size):
         return ''.join([choice(config['alphabet']) for _ in range(size)])
 
     def short_url_exists(self, short_url):
@@ -33,7 +38,7 @@ class Util:
             .first() \
             .long_url
 
-    def get_shortening(self, long_url=None, short_url=None):
+    def get_shortening(self, *_, long_url=None, short_url=None):
         results = self.db_session.query(Shortening)
 
         if long_url is not None:
@@ -52,13 +57,13 @@ class Util:
     def get_number_of_shortenings(self):
         return self.db_session.query(Shortening).count()
 
-    def generate_short_url(self, long_url):
+    def generate_short_url(self):
         short_url = None
         current_size = config['short_url_size']
         attempts = 0
 
-        while short_url is None or short_url_exists(short_url):
-            short_url = generate_random_string(current_size)
+        while short_url is None or self.short_url_exists(short_url):
+            short_url = self.generate_random_string(current_size)
             attempts += 1
 
             if attempts >= config['max_attempts_until_short_url_size_increases']:
@@ -70,18 +75,28 @@ class Util:
     def validate_short_url(self, short_url):
         if len(short_url) < config['min_short_url_size'] or \
            len(short_url) > config['max_short_url_size']:
-            return False
+            raise ShortURLException(
+                'Short URL must contain between %i and %i characters' %
+                (config['min_short_url_size'],
+                 config['max_short_url_size']))
 
         for x in short_url:
             if x not in config['alphabet']:
-                return False
+                raise ShortURLException(
+                    'Short URL contains forbidden character: %s' % x)
 
-        return True
+    def validate_long_url(self, long_url):
+        if not validators.url(long_url, public=True):
+            raise LongURLException("Invalid URL: %s" % long_url)
+
+    def add_shortening(self, shortening):
+        self.db_session.add(shortening)
+        self.db_session.commit()
 
     def shorten(self, long_url, short_url=None):
         custom = True
         if short_url is None:
-            short_url = generate_short_url(long_url)
+            short_url = generate_short_url()
             custom = False
 
         try:
