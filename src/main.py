@@ -24,45 +24,41 @@ class ShorteningResource(Resource):
         if short_url is None:
             return list(map(lambda x: x.encode(), util.get_all_shortenings()))
 
-        if util.short_url_exists(short_url=short_url):
-            shortening = util.get_shortening(short_url=short_url)
-            return shortening.encode()
+        if util.shortening_exists(short_url=short_url):
+            return util.get_shortening(short_url=short_url).encode()
         else:
             return self.create_error_response(
-                    ShorteningException("Short URL is not mapped to anything"))
+                ShorteningException("Short URL is not mapped to anything"))
 
     def post(self, **kwargs):
         util = Pitic.Instance().util
-        data = dict([(x[0].strip(), x[1].strip())
-                     for x in request.form.items()])
+        req = dict([(x[0].strip(), x[1].strip())
+                    for x in request.form.items()])
 
         try:
-            self.validate_post_request(data)
-        except LongURLException:
-            print("Invalid long URL; trying again with 'http://' prefix")
-            data['long_url'] = 'http://%s' % data['long_url']
-
-        try:
-            self.validate_post_request(data)
+            self.validate_post_request(req)
         except Exception as e:
             return self.create_error_response(e)
 
-        data['custom'] = 'custom' in data.keys() and data['custom'] == 'true'
+        req['custom'] = 'custom' in req.keys() and req['custom'] == 'true'
 
-        if not data['custom'] and util.long_url_exists(data['long_url']):
-            print("pula")
-            return util.get_shortening(long_url=data['long_url']).encode()
+        if not req['custom'] and util.shortening_exists(
+                long_url=req['long_url'],
+                custom=False):
+            return util.get_shortening(
+                long_url=req['long_url'],
+                custom=False).encode()
 
         try:
-            if data['custom']:
-                short_url = data['short_url']
+            if req['custom']:
+                short_url = req['short_url']
             else:
                 short_url = util.generate_short_url()
 
             shortening = Shortening(
-                long_url=data['long_url'],
+                long_url=req['long_url'],
                 short_url=short_url,
-                custom=data['custom'] == True,
+                custom=req['custom'],
                 ip=get_remote_address())
 
             util.add_shortening(shortening)
@@ -71,42 +67,48 @@ class ShorteningResource(Resource):
         except Exception as e:
             return self.create_error_response(e)
 
-    def validate_post_request(self, data):
+    def validate_post_request(self, req):
         required_keys = ['long_url']
 
-        if 'custom' in data.keys():
-            required_keys.append('short_url')
+        if 'custom' in req.keys():
+            if req['custom'] == 'true':
+                required_keys.append('short_url')
+            elif req['custom'] == 'false':
+                pass
+            else:
+                raise InvalidRequestException(
+                    "'custom' must be either 'true' or 'false'")
 
         for key in required_keys:
-            if key not in data.keys():
+            if key not in req.keys():
                 raise InvalidRequestException(
                     '<%s> must be provided in the POST request' % key)
 
-        for key in data.keys():
+        for key in req.keys():
             if key not in ['long_url', 'short_url', 'custom', 'ip',
                            'timestamp']:
                 raise InvalidRequestException(
                     "Unrecognized request field: %s" % key)
 
-        if 'custom' in data.keys() and data['custom'] not in ['true', 'false']:
-            raise InvalidRequestException(
-                "'custom' must be either 'true' or 'false'")
-
         util = Pitic.Instance().util
 
-        util.validate_long_url(data['long_url'])
-        if 'custom' in data.keys() and data['custom'] == 'true':
-            util.validate_short_url(data['short_url'])
-            if util.short_url_exists(data['short_url']):
+        try:
+            util.validate_long_url(req['long_url'])
+        except LongURLException:
+            req['long_url'] = "http://%s" % req['long_url']
+        util.validate_long_url(req['long_url'])
+
+        if 'custom' in req.keys() and req['custom'] == 'true':
+            util.validate_short_url(req['short_url'])
+            if util.shortening_exists(short_url=req['short_url']):
                 raise ShortURLException(
                     'Short URL <%s> is already mapped to something else.' %
-                    data['short_url'])
+                    req['short_url'])
 
     @staticmethod
     def create_error_response(e):
         return {'error': str(type(e)),
                 'message': str(e)}, 400
-
 
 
 @Singleton

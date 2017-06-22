@@ -15,41 +15,67 @@ class Util:
     def generate_random_string(self, size):
         return ''.join([choice(config['alphabet']) for _ in range(size)])
 
-    def short_url_exists(self, short_url):
-        return self.db_session \
-            .query(exists().where(Shortening.short_url == short_url)) \
-            .scalar()
+    # def short_url_exists(self, short_url):
+    #     return self.db_session \
+    #         .query(exists().where(Shortening.short_url == short_url)) \
+    #         .scalar()
 
-    def long_url_exists(self, long_url):
-        return self.db_session.query(exists().where(and_(
-            Shortening.long_url == long_url,
-            Shortening.custom == False))).scalar()
+    # def long_url_exists(self, long_url):
+    #     return self.db_session.query(exists().where(and_(
+    #         Shortening.long_url == long_url,
+    #         Shortening.custom == False))).scalar()
 
-    def get_short_url(self, long_url):
-        return self.db_session.query(Shortening).filter(and_(
-            Shortening.long_url == long_url,
-            Shortening.custom == False)).first().short_url
+    # def get_short_url(self, long_url):
+    #     return self.db_session.query(Shortening).filter(and_(
+    #         Shortening.long_url == long_url,
+    #         Shortening.custom == False)).first().short_url
 
-    def get_long_url(self, short_url):
-        print("querying short url = <%s>" % short_url)
-        return self.db_session \
-            .query(Shortening) \
-            .filter_by(short_url=short_url) \
-            .first() \
-            .long_url
+    # def get_long_url(self, short_url):
+    #     print("querying short url = <%s>" % short_url)
+    #     return self.db_session \
+    #         .query(Shortening) \
+    #         .filter_by(short_url=short_url) \
+    #         .first() \
+    #         .long_url
 
-    def get_shortening(self, *_, long_url=None, short_url=None):
-        results = self.db_session.query(Shortening)
+    def get_shortening(self, *_,
+                       long_url=None,
+                       short_url=None,
+                       custom=None):
+        query = self.db_session.query(Shortening)
 
         if long_url is not None:
-            results = results.filter_by(long_url=long_url)
-
+            query = query.filter_by(long_url=long_url)
         if short_url is not None:
-            results = results.filter_by(short_url=short_url)
+            query = query.filter_by(short_url=short_url)
+        if custom is not None:
+            query = query.filter_by(custom=custom)
 
-        print("first result: %r" % results.first())
+        return query.first()
 
-        return results.first()
+    def shortening_exists(self, *_,
+                          long_url=None,
+                          short_url=None,
+                          custom=None):
+        shortening = self.get_shortening(
+            long_url=long_url,
+            short_url=short_url,
+            custom=custom)
+
+        return shortening is not None
+
+    # def get_shortening(self, *_, long_url=None, short_url=None):
+    #     results = self.db_session.query(Shortening)
+
+    #     if long_url is not None:
+    #         results = results.filter_by(long_url=long_url)
+
+    #     if short_url is not None:
+    #         results = results.filter_by(short_url=short_url)
+
+    #     print("first result: %r" % results.first())
+
+    #     return results.first()
 
     def get_all_shortenings(self):
         return self.db_session.query(Shortening).all()
@@ -73,8 +99,10 @@ class Util:
         return short_url
 
     def validate_short_url(self, short_url):
-        if len(short_url) < config['min_short_url_size'] or \
-           len(short_url) > config['max_short_url_size']:
+        if not validators.between(
+                len(short_url),
+                min=config['min_short_url_size'],
+                max=config['max_short_url_size']):
             raise ShortURLException(
                 'Short URL must contain between %i and %i characters' %
                 (config['min_short_url_size'],
@@ -93,19 +121,19 @@ class Util:
         self.db_session.add(shortening)
         self.db_session.commit()
 
-    def shorten(self, long_url, short_url=None):
-        custom = True
-        if short_url is None:
-            short_url = generate_short_url()
-            custom = False
+    # def shorten(self, long_url, short_url=None):
+    #     custom = True
+    #     if short_url is None:
+    #         short_url = generate_short_url()
+    #         custom = False
 
-        try:
-            self.db_session.add(Shortening(
-                long_url,
-                short_url,
-                custom=custom,
-                ip=get_remote_address()))
+    #     try:
+    #         self.db_session.add(Shortening(
+    #             long_url,
+    #             short_url,
+    #             custom=custom,
+    #             ip=get_remote_address()))
 
-            self.db_session.commit()
-        except Exception as e:
-            print("could not shorten long_url = %s; reason: %s" % (long_url, e))
+    #         self.db_session.commit()
+    #     except Exception as e:
+    #         print("could not shorten long_url = %s; reason: %s" % (long_url, e))

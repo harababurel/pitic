@@ -13,7 +13,6 @@ config = {
     'app': {
         'SQLALCHEMY_DATABASE_URI': "postgresql://localhost/url-shortener",
         'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-        'DEFAULT_ERROR_MESSAGE': "muie",
         'DEBUG': True,
     }
 }
