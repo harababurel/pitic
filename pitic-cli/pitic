@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+import gflags
+import requests
+import json
+import sys
+
+pitic_url = 'http://localhost:5000'
+api_url = '%s/api/shortenings' % pitic_url
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_string('short', None, 'custom short URL')
+gflags.DEFINE_boolean('debug', False, 'produces debugging output')
+
+
+def usage():
+    msg = 'Usage: %s [--short=custom_short_url] [--debug] URL\n\n' \
+          'If the URL is not prefixed with a protocol, ' \
+          'http is used by default.\n\n' \
+          'Examples:\n' \
+          '\t%s http://google.com\n'  \
+          '\t%s reddit.com/r/Python\n' \
+          '\t%s --short=tensor https://www.tensorflow.org/get_started/' % \
+          (tuple([sys.argv[0]] * 4))
+    print(msg)
+
+
+def create_request(*_, long_url=None, short_url=None):
+    custom = short_url is not None
+
+    req = {
+        'long_url': long_url,
+    }
+
+    if custom:
+        req.update({
+            'custom': 'true',
+            'short_url': short_url,
+        })
+
+    return req
+
+
+def submit_request(req):
+    resp = requests.post(api_url, data=req)
+    return resp
+
+
+def parse_response(resp):
+    code = resp.status_code
+
+    print("Response code: %i" % code)
+    resp = json.loads(resp.content)
+
+    if code != 200:
+        if 'message' in resp:
+            print(resp['message'])
+        return
+    else:
+        msg = '%s was successfully shortened to %s/%s' % \
+            (resp['long_url'], pitic_url, resp['short_url'])
+
+        print(msg)
+
+
+def main(argv):
+    try:
+        argv = FLAGS(argv)
+        assert len(argv) == 2
+    except gflags.FlagsError as e:
+        print(e)
+        exit(1)
+    except AssertionError:
+        usage()
+        exit(1)
+
+    req = create_request(long_url=argv[1], short_url=FLAGS.short)
+
+    if FLAGS.debug:
+        print(req)
+
+    try:
+        resp = submit_request(req)
+        if FLAGS.debug:
+            print(resp)
+
+    except Exception as e:
+        print("Could not submit request. Reason:\n%s" % e)
+        exit(1)
+    parse_response(resp)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
