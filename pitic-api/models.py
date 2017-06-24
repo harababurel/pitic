@@ -33,7 +33,6 @@ class Shortening(Base):
 
     long_url = Column(String(2000), index=True)
     short_url = Column(String(32), primary_key=True)
-    hits = Column(Integer, default=0)
     timestamp = Column(DateTime)
     ip = Column(String(45), index=True)
     custom = Column(Boolean)
@@ -87,7 +86,7 @@ class Hit(Base):
     timestamp = Column(DateTime)
     ip = Column(String(45), index=True)
 
-    def __init__(self, short_url, timestamp=None, ip=None):
+    def __init__(self, short_url, *_, timestamp=None, ip=None):
         self.short_url = short_url
 
         if timestamp is None:

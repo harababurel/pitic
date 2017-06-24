@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, render_template
+from flask import Flask, request, redirect, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Resource, Api
@@ -11,9 +11,23 @@ from config import config
 
 from util import Util
 from singleton import Singleton
-from models import Shortening, ShorteningEncoder, DBSession
+from models import Shortening, ShorteningEncoder, Hit, DBSession
 from exceptions import *
 import json
+
+
+class RedirectResource(Resource):
+
+    def get(self, short_url=None):
+        util = Pitic.Instance().util
+
+        if util.shortening_exists(short_url=short_url):
+            shortening = util.get_shortening(short_url=short_url)
+            util.add(Hit(short_url, ip=get_remote_address()))
+
+            return redirect(shortening.long_url, code=302)
+        else:
+            return '', 404
 
 
 class ShorteningResource(Resource):
@@ -22,7 +36,7 @@ class ShorteningResource(Resource):
         util = Pitic.Instance().util
 
         if short_url is None:
-            return list(map(lambda x: x.encode(), util.get_all_shortenings()))
+            return self.all_shortenings_response()
 
         if util.shortening_exists(short_url=short_url):
             return util.get_shortening(short_url=short_url).encode()
@@ -34,6 +48,8 @@ class ShorteningResource(Resource):
         util = Pitic.Instance().util
         req = dict([(x[0].strip(), x[1].strip())
                     for x in request.form.items()])
+
+        print(req)
 
         try:
             self.validate_post_request(req)
@@ -61,7 +77,7 @@ class ShorteningResource(Resource):
                 custom=req['custom'],
                 ip=get_remote_address())
 
-            util.add_shortening(shortening)
+            util.add(shortening)
 
             return util.get_shortening(short_url=short_url).encode()
         except Exception as e:
@@ -105,6 +121,10 @@ class ShorteningResource(Resource):
                     'Short URL <%s> is already mapped to something else.' %
                     req['short_url'])
 
+    def all_shortenings_response(self):
+        return list(map(lambda x: x.encode(),
+                        Pitic.Instance().util.get_all_shortenings()))
+
     @staticmethod
     def create_error_response(e):
         return {'error': str(type(e)),
@@ -137,6 +157,7 @@ class Pitic(object):
                               '/api/shortenings',
                               '/api/shortenings/',
                               '/api/shortenings/<short_url>')
+        self.api.add_resource(RedirectResource, '/<short_url>')
 
     def run(self):
         self.app.run()

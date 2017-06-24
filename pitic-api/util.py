@@ -88,7 +88,7 @@ class Util:
         current_size = config['short_url_size']
         attempts = 0
 
-        while short_url is None or self.short_url_exists(short_url):
+        while short_url is None or self.shortening_exists(short_url=short_url):
             short_url = self.generate_random_string(current_size)
             attempts += 1
 
@@ -117,8 +117,8 @@ class Util:
         if not validators.url(long_url, public=True):
             raise LongURLException("Invalid URL: %s" % long_url)
 
-    def add_shortening(self, shortening):
-        self.db_session.add(shortening)
+    def add(self, obj):
+        self.db_session.add(obj)
         self.db_session.commit()
 
     # def shorten(self, long_url, short_url=None):
