@@ -28,7 +28,27 @@ Rules:
 Base = declarative_base()
 
 
-class Shortening(Base):
+class Encodable:
+
+    def __str__(self):
+        return str(self.encode())
+
+    def encode(self):
+        return json.loads(json.dumps(self, cls=Encoder))
+
+
+class Encoder(json.JSONEncoder):
+
+    def default(self, o):
+        if isinstance(o, (datetime, date)):
+            ret = o.isoformat()
+        else:
+            ret = dict([x for x in o.__dict__.items()
+                        if not x[0].startswith('_')])
+        return ret
+
+
+class Shortening(Base, Encodable):
     __tablename__ = 'shortenings'
 
     long_url = Column(String(2000), index=True)
@@ -58,25 +78,8 @@ class Shortening(Base):
         return '<%s shortened %s to %s>' % \
             (self.ip, self.long_url, self.short_url)
 
-    def __str__(self):
-        return str(self.encode())
 
-    def encode(self):
-        return json.loads(json.dumps(self, cls=ShorteningEncoder))
-
-
-class ShorteningEncoder(json.JSONEncoder):
-
-    def default(self, o):
-        if isinstance(o, (datetime, date)):
-            ret = o.isoformat()
-        else:
-            ret = dict([x for x in o.__dict__.items()
-                        if not x[0].startswith('_')])
-        return ret
-
-
-class Hit(Base):
+class Hit(Base, Encodable):
     __tablename__ = 'hits'
 
     id = Column(Integer, primary_key=True)
@@ -98,6 +101,7 @@ class Hit(Base):
 
     def __repr__(self):
         return '<%s opened %s>' % (self.ip, self.short_url)
+
 
 engine = create_engine(config['app']['SQLALCHEMY_DATABASE_URI'])
 Base.metadata.create_all(engine)
