@@ -7,8 +7,11 @@ from config import config
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from passlib.apps import custom_app_context as pwd_context
+
 from bson import json_util
 import json
+import hashlib
 
 
 """
@@ -101,6 +104,29 @@ class Hit(Base, Encodable):
 
     def __repr__(self):
         return '<%s opened %s>' % (self.ip, self.short_url)
+
+
+class User(Base, Encodable):
+    __tablename__ = 'users'
+
+    email = Column(String(100), primary_key=True)
+    password_hash = Column(String(128))
+    token = Column(String(32))
+    admin = Column(Boolean)
+
+    def __init__(self, email, password, *_, admin=False):
+        self.email = email
+        self.password_hash = pwd_context.encrypt(password)
+
+        self.token = hashlib.md5(email.encode('utf-8')).hexdigest()
+        self.admin = admin
+
+    def _verify_password(self, password):
+        return pwd_context.verify(password, self.password_hash)
+
+    def __repr__(self):
+        return "AccessToken(email=%s, token=%s, admin=%r)" % \
+            (self.email, self.token, self.admin)
 
 
 engine = create_engine(config['app']['SQLALCHEMY_DATABASE_URI'])

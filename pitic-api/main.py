@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, redirect, render_template
+from flask import Flask, request, redirect, render_template, abort, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Resource, Api
@@ -11,7 +11,7 @@ from config import config
 from repo import Repo
 from util import Util
 from singleton import Singleton
-from models import Shortening, Hit, DBSession
+from models import Shortening, Hit, User, DBSession
 from exceptions import *
 import json
 
@@ -24,16 +24,42 @@ class RedirectResource(Resource):
         try:
             shortening = repo.get_shortenings(short_url=short_url)[0]
         except IndexError:
-            return '', 404
+            abort(404)
 
         repo.add(Hit(short_url, ip=get_remote_address()))
         return redirect(shortening.long_url, code=302)
+
+
+class UserResource(Resource):
+
+    def post(self, **kwargs):
+
+        repo = Pitic.Instance().repo
+        req = dict([(x[0].strip(), x[1].strip())
+                    for x in request.form.items()])
+
+        email = req.get('email')
+        password = req.get('password')
+
+        if email is None or password is None:
+            abort(400)
+
+        if repo.users_exist(email=email):
+            abort(400)
+
+        user = User(email, password)
+        repo.add(user)
+
+        return repo.get_users(email=email)[0].encode()
 
 
 class HitResource(Resource):
 
     def get(self, id=None):
         repo = Pitic.Instance().repo
+
+        # if not repo.access_token_is_admin(access_token):
+        #     abort(403)
 
         if id is None:
             return self.all_hits_response()
@@ -116,7 +142,7 @@ class ShorteningResource(Resource):
 
         for key in req:
             if key not in ['long_url', 'short_url', 'custom', 'ip',
-                           'timestamp']:
+                           'timestamp', 'access_token']:
                 raise InvalidRequestException(
                     "Unrecognized request field: %s" % key)
 
@@ -181,6 +207,8 @@ class Pitic(object):
                               '/api/hits',
                               '/api/hits/',
                               '/api/hits/<int:id>')
+        self.api.add_resource(UserResource,
+                              '/api/users')
 
     def run(self):
         self.app.run()
