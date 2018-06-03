@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import gflags
+from absl import app, flags, logging
 import requests
 import json
 import sys
@@ -7,10 +7,10 @@ import sys
 pitic_url = 'http://localhost:5000'
 api_url = '%s/api/shortenings' % pitic_url
 
-FLAGS = gflags.FLAGS
+FLAGS = flags.FLAGS
 
-gflags.DEFINE_string('short', None, 'custom short URL')
-gflags.DEFINE_boolean('debug', False, 'produces debugging output')
+flags.DEFINE_string('short', None, 'custom short URL')
+flags.DEFINE_boolean('debug', False, 'produces debugging output')
 
 
 def usage():
@@ -67,11 +67,11 @@ def main(argv):
     try:
         argv = FLAGS(argv)
         assert len(argv) == 2
-    except gflags.FlagsError as e:
-        print(e)
-        exit(1)
     except AssertionError:
         usage()
+        exit(1)
+    except Exception as e:
+        print(e)
         exit(1)
 
     req = create_request(long_url=argv[1], short_url=FLAGS.short)
