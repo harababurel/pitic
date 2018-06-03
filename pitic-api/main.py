@@ -211,7 +211,7 @@ class Pitic(object):
                               '/api/users')
 
     def run(self):
-        self.app.run()
+        self.app.run(host=config['host'], port=config['port'])
 
 
 if __name__ == "__main__":
